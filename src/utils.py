@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -34,6 +35,22 @@ def save_checkpoint(
         path,
     )
     logger.info("Checkpoint saved: %s (epoch=%d, val_loss=%.6f)", path, epoch, val_loss)
+
+
+def load_scaler_params(path: str, col: str) -> dict:
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Scaler params not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        params = json.load(f)
+    # 실제 파일 형식: {"columns": [...], "mean": [...], "scale": [...]}
+    idx = params["columns"].index(col)
+    return {"mean": float(params["mean"][idx]), "std": float(params["scale"][idx])}
+
+
+def invert_target(z: np.ndarray, mean: float, std: float) -> np.ndarray:
+    log_return = z * std + mean          # inverse StandardScaler
+    pct_return = np.exp(log_return) - 1  # inverse log diff → % 수익률
+    return pct_return
 
 
 def load_checkpoint(model: nn.Module, path: str) -> dict:

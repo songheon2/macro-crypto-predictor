@@ -85,7 +85,8 @@ macro-crypto-predictor/
 ├── data/
 │   ├── macro_features_train_scaled.csv   # macro-collector 산출물
 │   ├── macro_features_val_scaled.csv
-│   └── macro_features_test_scaled.csv
+│   ├── macro_features_test_scaled.csv
+│   └── scaler_params.json                # macro-collector 산출물 (μ, σ 저장)
 ├── src/
 │   ├── __init__.py
 │   ├── dataset.py          # PyTorch Dataset / DataLoader
@@ -175,6 +176,7 @@ DATA_DIR: str = "data"
 OUTPUT_DIR: str = "outputs"
 CHECKPOINT_DIR: str = "outputs/checkpoints"
 RESULTS_DIR: str = "outputs/results"
+SCALER_PARAMS_PATH: str = "data/scaler_params.json"  # macro-collector 제공 μ, σ
 
 # 학습
 SEED: int = 42
@@ -249,17 +251,29 @@ TARGET_COL: str = "btc_open"   # 타깃 컬럼명 — 다음 행 시가 예측 (
 - **역할**: 저장된 체크포인트 로드 → test 셋 평가 → 모델 간 비교 결과를 이미지로 저장
 - **핵심 클래스**:
   - `Evaluator` — `evaluate(model_name: str, checkpoint_path: str) -> dict`
+- **역변환 적용**:
+  - RMSE는 z-score 단위로 계산 (모델 간 비교 기준)
+  - 차트 출력은 `invert_target()` 적용 후 **% 수익률 단위**로 표시
+  - `load_scaler_params(config.SCALER_PARAMS_PATH, config.TARGET_COL)` 로 btc_open μ, σ 추출
 - **출력 형식**: PNG 이미지 (`outputs/results/` 저장)
-  - `prediction_vs_actual_{model_name}.png` — 예측값 vs 실제값 시계열 차트
-  - `model_comparison_rmse.png` — 모델별 RMSE 비교 바 차트
-- **평가 지표**: RMSE (Root Mean Squared Error) — 회귀 기준 지표
+  - `prediction_vs_actual_{model_name}.png` — 예측값 vs 실제값 시계열 차트 (y축: % 수익률)
+  - `model_comparison_rmse.png` — 모델별 RMSE 비교 바 차트 (z-score 단위)
+- **평가 지표**: RMSE (Root Mean Squared Error) — z-score 단위, 회귀 기준 지표
 
 ### `src/utils.py`
-- **역할**: 재현성 보장, 체크포인트 I/O
+- **역할**: 재현성 보장, 체크포인트 I/O, 역변환
 - **핵심 함수**:
   - `set_seed(seed: int) -> None` — torch·numpy·random 전체 시드 고정
   - `save_checkpoint(model: nn.Module, path: str, epoch: int, val_loss: float) -> None`
   - `load_checkpoint(model: nn.Module, path: str) -> dict`
+  - `load_scaler_params(path: str, col: str) -> dict` — scaler_params.json에서 col 컬럼의 μ, σ 추출 후 `{"mean": float, "std": float}` 반환
+    - 실제 파일 형식: `{"columns": [...], "mean": [...], "scale": [...]}` (18개 컬럼 전체 배열)
+    - col 파라미터로 columns 배열에서 인덱스 탐지 → mean[idx], scale[idx] 추출
+  - `invert_target(z: np.ndarray, mean: float, std: float) -> np.ndarray` — z-score → % 수익률 역변환
+    ```
+    1단계: log_return = z * std + mean   (inverse StandardScaler)
+    2단계: pct_return = exp(log_return) - 1  (inverse log diff)
+    ```
 
 ### `train.py`
 - **역할**: 학습 전용 진입점
@@ -356,6 +370,8 @@ python evaluate.py
 | 2026-06-29 | 평가 지표 확정: RMSE | 사용자 결정 | [설계 담당] |
 | 2026-06-29 | 피처 목록 확정 (18개), INPUT_SIZE=18 추가, btc_open 리키지 주의사항 명시 | 피처 목록 공유 | [설계 담당] |
 | 2026-06-29 | evaluator 출력 형식 CSV → PNG 이미지로 변경 | 결과 시각화 직관성 확보 | [설계 담당] |
+| 2026-06-29 | 역변환 기능 설계 추가: z-score → 로그수익률 → % 수익률 | 모델 예측값을 실제 해석 가능한 수익률로 변환 | [설계 담당] |
+| 2026-06-29 | scaler_params.json 형식 명세 수정: 단일값 → 18개 컬럼 배열 구조, load_scaler_params에 col 파라미터 추가 | 실제 파일 형식이 설계 명세와 달랐음 (코딩 담당 보고) | [설계 담당] |
 | 2026-06-29 | 데이터 형식 Parquet → CSV 변경 | 규모 대비 CSV가 충분하고 디버깅 편의성 높음 | [설계 담당] |
 | 2026-06-29 | dataset.py 전처리 순서 확정: 초반 연속 NaN 블록만 제거 후 shift→윈도우 | 고정 일수 아닌 동적 유효 시작일 탐지 방식 채택 | [설계 담당] |
 

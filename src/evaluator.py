@@ -9,7 +9,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 import config
-from src.utils import load_checkpoint
+from src.utils import invert_target, load_checkpoint, load_scaler_params
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +94,28 @@ class Evaluator:
     ) -> None:
         os.makedirs(config.RESULTS_DIR, exist_ok=True)
 
-        x = np.arange(len(labels_arr))
+        plot_preds = preds_arr
+        plot_labels = labels_arr
+        y_label = "btc_open (z-score)"
+
+        try:
+            params = load_scaler_params(config.SCALER_PARAMS_PATH, config.TARGET_COL)
+            plot_preds = invert_target(preds_arr, params["mean"], params["std"])
+            plot_labels = invert_target(labels_arr, params["mean"], params["std"])
+            y_label = "btc_open (% return)"
+        except FileNotFoundError:
+            logger.warning(
+                "scaler_params.json not found at %s — plotting in z-score units.",
+                config.SCALER_PARAMS_PATH,
+            )
+
+        x = np.arange(len(plot_labels))
         fig, ax = plt.subplots(figsize=(12, 4))
-        ax.plot(x, labels_arr, label="actual", linewidth=1.0)
-        ax.plot(x, preds_arr, label="predicted", linewidth=1.0, alpha=0.8)
+        ax.plot(x, plot_labels, label="actual", linewidth=1.0)
+        ax.plot(x, plot_preds, label="predicted", linewidth=1.0, alpha=0.8)
         ax.set_title(f"Prediction vs Actual — {model_name} (Test Set)")
         ax.set_xlabel("Sample Index")
-        ax.set_ylabel("btc_open (log return)")
+        ax.set_ylabel(y_label)
         ax.legend()
 
         save_path = os.path.join(
