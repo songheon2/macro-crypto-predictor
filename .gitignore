@@ -17,7 +17,6 @@ outputs/checkpoints/*
 # 평가 결과 이미지 (폴더 구조는 .gitkeep으로 추적)
 outputs/results/*
 !outputs/results/.gitkeep
-!outputs/results/*.png
 
 # Python 캐시
 __pycache__/
