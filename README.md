@@ -87,13 +87,12 @@ macro-crypto-predictor/
   → exp(log_return) - 1  (inverse log diff)        → % 수익률
 ```
 
-`data/scaler_params.json` 형식:
+`data/scaler_params.json` 형식 (18개 컬럼 전체 배열):
 ```json
 {
-  "btc_open": {
-    "mean": 0.0012,
-    "std": 0.0381
-  }
+  "columns": ["open", "volume", ..., "btc_open", ..., "credit_spread_bbb"],
+  "mean":    [0.0003, 1.0021, ..., 0.0012,  ..., 0.0005],
+  "scale":   [0.0251, 0.1832, ..., 0.0381,  ..., 0.0012]
 }
 ```
 
