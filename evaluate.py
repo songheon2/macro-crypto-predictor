@@ -36,6 +36,7 @@ def main() -> None:
         results.append(result)
 
     if results:
+        evaluator.save_comparison_chart(results)
         logger.info("=== Evaluation Summary ===")
         for r in sorted(results, key=lambda x: x["rmse"]):
             logger.info("  %-15s RMSE=%.6f", r["model"], r["rmse"])

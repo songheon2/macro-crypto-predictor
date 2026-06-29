@@ -1,8 +1,9 @@
 import logging
 import os
+from typing import List
 
+import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -42,25 +43,70 @@ class Evaluator:
         labels_arr = np.array(all_labels)
         rmse = float(np.sqrt(np.mean((preds_arr - labels_arr) ** 2)))
 
-        result = {"model": model_name, "rmse": rmse, "n_samples": len(labels_arr)}
+        result = {
+            "model": model_name,
+            "rmse": rmse,
+            "n_samples": len(labels_arr),
+            "preds": preds_arr,
+            "labels": labels_arr,
+        }
         logger.info("Evaluation — %s: RMSE=%.6f (n=%d)", model_name, rmse, len(labels_arr))
 
-        self._save_result(result)
+        self._save_prediction_plot(model_name, preds_arr, labels_arr)
         return result
 
-    def _save_result(self, result: dict) -> None:
+    def save_comparison_chart(self, results: List[dict]) -> None:
+        if not results:
+            logger.warning("No results to plot for comparison chart.")
+            return
+
         os.makedirs(config.RESULTS_DIR, exist_ok=True)
-        results_path = os.path.join(config.RESULTS_DIR, "evaluation_results.csv")
 
-        row = pd.DataFrame([result])
-        if os.path.exists(results_path):
-            existing = pd.read_csv(results_path)
-            combined = pd.concat(
-                [existing[existing["model"] != result["model"]], row],
-                ignore_index=True,
+        model_names = [r["model"] for r in results]
+        rmse_values = [r["rmse"] for r in results]
+
+        fig, ax = plt.subplots(figsize=(max(6, len(model_names) * 2), 5))
+        bars = ax.bar(model_names, rmse_values)
+        ax.set_title("Model Comparison — RMSE (Test Set)")
+        ax.set_xlabel("Model")
+        ax.set_ylabel("RMSE")
+        for bar, val in zip(bars, rmse_values):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                f"{val:.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
             )
-        else:
-            combined = row
 
-        combined.to_csv(results_path, index=False)
-        logger.info("Results saved to %s", results_path)
+        save_path = os.path.join(config.RESULTS_DIR, "model_comparison_rmse.png")
+        fig.tight_layout()
+        fig.savefig(save_path)
+        plt.close(fig)
+        logger.info("Comparison chart saved: %s", save_path)
+
+    def _save_prediction_plot(
+        self,
+        model_name: str,
+        preds_arr: np.ndarray,
+        labels_arr: np.ndarray,
+    ) -> None:
+        os.makedirs(config.RESULTS_DIR, exist_ok=True)
+
+        x = np.arange(len(labels_arr))
+        fig, ax = plt.subplots(figsize=(12, 4))
+        ax.plot(x, labels_arr, label="actual", linewidth=1.0)
+        ax.plot(x, preds_arr, label="predicted", linewidth=1.0, alpha=0.8)
+        ax.set_title(f"Prediction vs Actual — {model_name} (Test Set)")
+        ax.set_xlabel("Sample Index")
+        ax.set_ylabel("btc_open (log return)")
+        ax.legend()
+
+        save_path = os.path.join(
+            config.RESULTS_DIR, f"prediction_vs_actual_{model_name}.png"
+        )
+        fig.tight_layout()
+        fig.savefig(save_path)
+        plt.close(fig)
+        logger.info("Prediction plot saved: %s", save_path)

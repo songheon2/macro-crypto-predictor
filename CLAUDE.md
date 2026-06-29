@@ -246,10 +246,12 @@ TARGET_COL: str = "btc_open"   # 타깃 컬럼명 — 다음 행 시가 예측 (
   - val loss 최소 시점에 체크포인트 자동 저장
 
 ### `src/evaluator.py`
-- **역할**: 저장된 체크포인트 로드 → test 셋 평가 → 모델 간 비교 결과 저장
+- **역할**: 저장된 체크포인트 로드 → test 셋 평가 → 모델 간 비교 결과를 이미지로 저장
 - **핵심 클래스**:
   - `Evaluator` — `evaluate(model_name: str, checkpoint_path: str) -> dict`
-  - 결과를 `outputs/results/` 에 CSV로 저장
+- **출력 형식**: PNG 이미지 (`outputs/results/` 저장)
+  - `prediction_vs_actual_{model_name}.png` — 예측값 vs 실제값 시계열 차트
+  - `model_comparison_rmse.png` — 모델별 RMSE 비교 바 차트
 - **평가 지표**: RMSE (Root Mean Squared Error) — 회귀 기준 지표
 
 ### `src/utils.py`
@@ -353,6 +355,7 @@ python evaluate.py
 | 2026-06-29 | 타깃 변수 확정: `btc_open` (shift(-1), 회귀) | 사용자 결정 | [설계 담당] |
 | 2026-06-29 | 평가 지표 확정: RMSE | 사용자 결정 | [설계 담당] |
 | 2026-06-29 | 피처 목록 확정 (18개), INPUT_SIZE=18 추가, btc_open 리키지 주의사항 명시 | 피처 목록 공유 | [설계 담당] |
+| 2026-06-29 | evaluator 출력 형식 CSV → PNG 이미지로 변경 | 결과 시각화 직관성 확보 | [설계 담당] |
 | 2026-06-29 | 데이터 형식 Parquet → CSV 변경 | 규모 대비 CSV가 충분하고 디버깅 편의성 높음 | [설계 담당] |
 | 2026-06-29 | dataset.py 전처리 순서 확정: 초반 연속 NaN 블록만 제거 후 shift→윈도우 | 고정 일수 아닌 동적 유효 시작일 탐지 방식 채택 | [설계 담당] |
 
