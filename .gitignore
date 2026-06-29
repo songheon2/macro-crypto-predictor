@@ -1,0 +1,29 @@
+# 로컬 전용 파일
+CLAUDE.local.md
+REVIEW.md
+GeneralRoleCLAUDE.md/
+
+# 가상환경
+.venv/
+
+# 데이터 (폴더 구조는 .gitkeep으로 추적)
+data/*
+!data/.gitkeep
+
+# 모델 체크포인트 (폴더 구조는 .gitkeep으로 추적)
+outputs/checkpoints/*
+!outputs/checkpoints/.gitkeep
+
+# 평가 결과 (폴더 구조는 .gitkeep으로 추적)
+outputs/results/*
+!outputs/results/.gitkeep
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 기타
+*.egg-info/
+.DS_Store
