@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _objective_lstm(trial: optuna.Trial) -> float:
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     seq_len = trial.suggest_categorical("seq_len", [15, 30, 60])
     hidden_size = trial.suggest_categorical("hidden_size", [64, 128, 256])
@@ -30,13 +31,14 @@ def _objective_lstm(trial: optuna.Trial) -> float:
     set_seed(config.SEED)
     train_loader, val_loader, _ = get_dataloaders(batch_size=batch_size, seq_len=seq_len)
     model = LSTMModel(hidden_size=hidden_size, num_layers=num_layers, dropout=dropout)
-    trainer = Trainer(model_name="lstm_tune", lr=lr)
+    trainer = Trainer(model_name="lstm_tune", lr=lr, weight_decay=weight_decay)
     best_val_loss = trainer.train(model, train_loader, val_loader)
     return math.sqrt(best_val_loss)
 
 
 def _objective_transformer(trial: optuna.Trial) -> float:
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
     batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
     seq_len = trial.suggest_categorical("seq_len", [15, 30, 60])
     d_model = trial.suggest_categorical("d_model", [32, 64, 128])
@@ -47,7 +49,7 @@ def _objective_transformer(trial: optuna.Trial) -> float:
     set_seed(config.SEED)
     train_loader, val_loader, _ = get_dataloaders(batch_size=batch_size, seq_len=seq_len)
     model = TransformerModel(d_model=d_model, nhead=nhead, num_layers=num_layers, dropout=dropout)
-    trainer = Trainer(model_name="transformer_tune", lr=lr)
+    trainer = Trainer(model_name="transformer_tune", lr=lr, weight_decay=weight_decay)
     best_val_loss = trainer.train(model, train_loader, val_loader)
     return math.sqrt(best_val_loss)
 
@@ -71,7 +73,7 @@ def _retrain_best(model_name: str, best_params: dict) -> None:
             num_layers=best_params["num_layers"],
             dropout=best_params["dropout"],
         )
-    trainer = Trainer(model_name=model_name, lr=best_params["lr"])
+    trainer = Trainer(model_name=model_name, lr=best_params["lr"], weight_decay=best_params["weight_decay"])
     trainer.train(model, train_loader, val_loader)
 
 

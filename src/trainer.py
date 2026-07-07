@@ -12,9 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer:
-    def __init__(self, model_name: str, lr: float = config.LEARNING_RATE) -> None:
+    def __init__(
+        self,
+        model_name: str,
+        lr: float = config.LEARNING_RATE,
+        weight_decay: float = config.WEIGHT_DECAY,
+    ) -> None:
         self._model_name = model_name
         self._lr = lr
+        self._weight_decay = weight_decay
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info("Trainer device: %s", self._device)
 
@@ -25,7 +31,17 @@ class Trainer:
         val_loader: DataLoader,
     ) -> float:
         model.to(self._device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=self._lr)
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=self._lr,
+            weight_decay=self._weight_decay,
+        )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=config.LR_SCHEDULER_FACTOR,
+            patience=config.LR_SCHEDULER_PATIENCE,
+        )
         criterion = nn.MSELoss()
 
         best_val_loss = float("inf")
@@ -45,6 +61,8 @@ class Trainer:
                 train_loss,
                 val_loss,
             )
+
+            scheduler.step(val_loss)
 
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -85,6 +103,7 @@ class Trainer:
                 if train and optimizer is not None:
                     optimizer.zero_grad()
                     loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRAD_CLIP_NORM)
                     optimizer.step()
 
                 total_loss += loss.item()

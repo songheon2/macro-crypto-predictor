@@ -24,3 +24,7 @@ TARGET_COL: str = "btc_open"
 SCALER_PARAMS_PATH: str = "data/scaler_params.json"
 
 N_TRIALS: int = 50
+WEIGHT_DECAY: float = 1e-4
+LR_SCHEDULER_PATIENCE: int = 5
+LR_SCHEDULER_FACTOR: float = 0.5
+GRAD_CLIP_NORM: float = 1.0
