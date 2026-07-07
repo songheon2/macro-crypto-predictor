@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class MacroDataset(Dataset):
-    def __init__(self, features: np.ndarray, target: np.ndarray) -> None:
+    def __init__(
+        self, features: np.ndarray, target: np.ndarray, seq_len: int = config.SEQ_LEN
+    ) -> None:
         # features: (T, INPUT_SIZE), target: (T,)  — already aligned after dropna
         self._features = features
         self._target = target
-        self._seq_len = config.SEQ_LEN
+        self._seq_len = seq_len
         n = len(target)
         if n < self._seq_len:
             raise ValueError(
@@ -56,7 +58,10 @@ def _load_split(path: str) -> Tuple[np.ndarray, np.ndarray]:
     return features, target
 
 
-def get_dataloaders() -> Tuple[DataLoader, DataLoader, DataLoader]:
+def get_dataloaders(
+    batch_size: int = config.BATCH_SIZE,
+    seq_len: int = config.SEQ_LEN,
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
     train_path = os.path.join(config.DATA_DIR, "macro_features_train_scaled.csv")
     val_path = os.path.join(config.DATA_DIR, "macro_features_val_scaled.csv")
     test_path = os.path.join(config.DATA_DIR, "macro_features_test_scaled.csv")
@@ -66,20 +71,20 @@ def get_dataloaders() -> Tuple[DataLoader, DataLoader, DataLoader]:
     test_features, test_target = _load_split(test_path)
 
     train_loader = DataLoader(
-        MacroDataset(train_features, train_target),
-        batch_size=config.BATCH_SIZE,
+        MacroDataset(train_features, train_target, seq_len=seq_len),
+        batch_size=batch_size,
         shuffle=True,
         drop_last=False,
     )
     val_loader = DataLoader(
-        MacroDataset(val_features, val_target),
-        batch_size=config.BATCH_SIZE,
+        MacroDataset(val_features, val_target, seq_len=seq_len),
+        batch_size=batch_size,
         shuffle=False,
         drop_last=False,
     )
     test_loader = DataLoader(
-        MacroDataset(test_features, test_target),
-        batch_size=config.BATCH_SIZE,
+        MacroDataset(test_features, test_target, seq_len=seq_len),
+        batch_size=batch_size,
         shuffle=False,
         drop_last=False,
     )

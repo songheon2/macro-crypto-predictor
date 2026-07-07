@@ -22,3 +22,5 @@ TRANSFORMER_DROPOUT: float = 0.1
 
 TARGET_COL: str = "btc_open"
 SCALER_PARAMS_PATH: str = "data/scaler_params.json"
+
+N_TRIALS: int = 50

@@ -27,23 +27,29 @@ class _PositionalEncoding(nn.Module):
 
 
 class TransformerModel(nn.Module):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        d_model: int = config.TRANSFORMER_D_MODEL,
+        nhead: int = config.TRANSFORMER_NHEAD,
+        num_layers: int = config.TRANSFORMER_NUM_LAYERS,
+        dropout: float = config.TRANSFORMER_DROPOUT,
+    ) -> None:
         super().__init__()
-        self.input_proj = nn.Linear(config.INPUT_SIZE, config.TRANSFORMER_D_MODEL)
+        self.input_proj = nn.Linear(config.INPUT_SIZE, d_model)
         self.pos_enc = _PositionalEncoding(
-            d_model=config.TRANSFORMER_D_MODEL,
-            dropout=config.TRANSFORMER_DROPOUT,
+            d_model=d_model,
+            dropout=dropout,
         )
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=config.TRANSFORMER_D_MODEL,
-            nhead=config.TRANSFORMER_NHEAD,
-            dropout=config.TRANSFORMER_DROPOUT,
+            d_model=d_model,
+            nhead=nhead,
+            dropout=dropout,
             batch_first=True,
         )
         self.encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=config.TRANSFORMER_NUM_LAYERS
+            encoder_layer, num_layers=num_layers
         )
-        self.fc = nn.Linear(config.TRANSFORMER_D_MODEL, 1)
+        self.fc = nn.Linear(d_model, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (batch, SEQ_LEN, INPUT_SIZE)

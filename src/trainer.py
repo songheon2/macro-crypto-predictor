@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer:
-    def __init__(self, model_name: str) -> None:
+    def __init__(self, model_name: str, lr: float = config.LEARNING_RATE) -> None:
         self._model_name = model_name
+        self._lr = lr
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info("Trainer device: %s", self._device)
 
@@ -22,9 +23,9 @@ class Trainer:
         model: nn.Module,
         train_loader: DataLoader,
         val_loader: DataLoader,
-    ) -> None:
+    ) -> float:
         model.to(self._device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
+        optimizer = torch.optim.Adam(model.parameters(), lr=self._lr)
         criterion = nn.MSELoss()
 
         best_val_loss = float("inf")
@@ -58,6 +59,8 @@ class Trainer:
                         config.EARLY_STOPPING_PATIENCE,
                     )
                     break
+
+        return best_val_loss
 
     def _run_epoch(
         self,

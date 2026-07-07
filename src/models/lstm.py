@@ -5,16 +5,21 @@ import config
 
 
 class LSTMModel(nn.Module):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        hidden_size: int = config.LSTM_HIDDEN_SIZE,
+        num_layers: int = config.LSTM_NUM_LAYERS,
+        dropout: float = config.LSTM_DROPOUT,
+    ) -> None:
         super().__init__()
         self.lstm = nn.LSTM(
             input_size=config.INPUT_SIZE,
-            hidden_size=config.LSTM_HIDDEN_SIZE,
-            num_layers=config.LSTM_NUM_LAYERS,
-            dropout=config.LSTM_DROPOUT if config.LSTM_NUM_LAYERS > 1 else 0.0,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0.0,
             batch_first=True,
         )
-        self.fc = nn.Linear(config.LSTM_HIDDEN_SIZE, 1)
+        self.fc = nn.Linear(hidden_size, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (batch, SEQ_LEN, INPUT_SIZE)
