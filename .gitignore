@@ -6,9 +6,10 @@ GeneralRoleCLAUDE.md/
 # 가상환경
 .venv/
 
-# 데이터 (폴더 구조는 .gitkeep으로 추적)
+# 데이터 (폴더 구조는 .gitkeep으로 추적, scaler_params.json만 예외로 추적)
 data/*
 !data/.gitkeep
+!data/scaler_params.json
 
 # 모델 체크포인트 (폴더 구조는 .gitkeep으로 추적)
 outputs/checkpoints/*
